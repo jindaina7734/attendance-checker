@@ -17,7 +17,7 @@ path = Path(__file__).resolve().parent / 'Pe'
 
 def empty_csv():
     with open(Path(__file__).with_name('Attendance.csv'), mode='w') as file:
-        file.write('Student Name / Class,Time,Date')
+        file.write('Student Name,Class,Time,Date')
         file.close()
 
 # menu bar that has a file menu
@@ -48,7 +48,14 @@ def findEncodings(images):
 encoded_face_train = findEncodings(images)
 
 def markAttendance(name):
-    with open(Path(__file__).with_name('Attendance.csv'),'r+', encoding='cp932', errors='ignore') as f:
+    df = pd.read_csv(Path(__file__).with_name('Attendance.csv'))
+    # Merge columns "Student Name" and "Class" into one column "Name Class"
+    df['Name Class'] = df['Student Name'] + '_' + df['Class']
+    df.drop(['Student Name', 'Class'], axis=1, inplace=True)
+    df = df[['Name Class', 'Time', 'Date']]
+    # Make a dummy csv file to process marking attendance
+    df.to_csv(Path(__file__).with_name('Attendance_temp.csv'), index=False)
+    with open(Path(__file__).with_name('Attendance_temp.csv'),'r+', encoding='cp932', errors='ignore') as f:
         myDataList = f.readlines()
         nameList = []
         for line in myDataList:
@@ -60,6 +67,13 @@ def markAttendance(name):
             date = now.strftime('%d-%B-%Y')
             f.writelines(f'\n{name}, {time}, {date}')
         f.close()
+    # From the dummy csv file, divide the "Name Class" column into "Student Name" and "Class" columns again 
+    # and save it to the original csv file
+    df2 = pd.read_csv(Path(__file__).with_name('Attendance_temp.csv'))
+    df2[['Student Name', 'Class']] = df2['Name Class'].str.split('_', expand=True)
+    df2.drop(['Name Class'], axis=1, inplace=True)
+    df2 = df2[['Student Name', 'Class', 'Time', 'Date']]
+    df2.to_csv(Path(__file__).with_name('Attendance.csv'), index=False)
 
 # create canvas widget to display video capture
 canvas = tk.Canvas(root, width=640, height=480)
@@ -71,11 +85,6 @@ attendance_label.pack(pady=10)
 
 # csv content
 df = pd.read_csv(Path(__file__).with_name('Attendance.csv'))
-# split the name and class column
-df[['Student Name', 'Class']] = df['Student Name / Class'].str.split(' ', expand=True)
-df = df.drop(['Student Name / Class'], axis=1)
-# swap the columns
-df = df[['Student Name', 'Class', 'Time', 'Date']]
 
 # adjust the text position
 tree = ttk.Treeview(root)
@@ -119,13 +128,14 @@ while True:
                 cv2.rectangle(img,(x1,y1),(x2,y2),(0,255,0),2)
                 # update attendance label text
                 attendance_label.config(text=f"Attendance Checked: {name}") 
+                # mark attendance
+                markAttendance(name)
                 # update csv content
                 df_updated = pd.read_csv(Path(__file__).with_name('Attendance.csv'))
                 tree.delete(*tree.get_children())
                 for index, row in df_updated.iterrows():
                     tree.insert('', 'end', text=index, values=list(row))
                 winsound.PlaySound('Welcome.wav', winsound.SND_ALIAS)
-                markAttendance(name)
             else:
                 attendance_label.config(text="Attendance Checked: ") # reset attendance label text
         last_update_time = current_time # update last update time
