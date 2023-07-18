@@ -9,6 +9,7 @@ In this project, I applied face_recognition - a pre-trained model that can make 
 ![image](https://github.com/jindaina7734/attendance-checker/assets/61261926/d84bb2e4-aedc-4318-8b3a-8295679b3f26)
 
 The model has an interface built using the Tkinter library. It allows us to practice with the CSV file in real time (update and remove values continuously). With a friendly, easy-to-use interface, attendance management will become more efficient.
+
 ![image](https://github.com/jindaina7734/attendance-checker/assets/61261926/2edc7153-e079-4387-832e-98f5a2f843a4)
 
 ## III. Installation: 
